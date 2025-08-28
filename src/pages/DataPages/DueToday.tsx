@@ -98,7 +98,7 @@ const DueToday = () => {
 
       await axios.post(
         `${apiUrl}/api/loans/roll-over/${pendingLoanId}`,
-        { total_amount: Number(totalAmount) },
+        { principal: Number(totalAmount) },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -274,7 +274,7 @@ const DueToday = () => {
         <div className="no-scrollbar relative w-auto max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
           <div className="px-2 pr-14">
             <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Enter Mpesa Code
+              Enter Principal
             </h4>
           </div>
           <form className="flex flex-col" onSubmit={handleRolloverSave}>
@@ -282,7 +282,7 @@ const DueToday = () => {
               <div className="mt-7">
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
                   <div className="col-span-2 lg:col-span-1">
-                    <Label>Total Amount</Label>
+                    <Label>Principal</Label>
                     <Input
                       type="number"
                       value={totalAmount}

@@ -93,7 +93,7 @@ const Defaulted = () => {
 
       await axios.post(
         `${apiUrl}/api/loans/roll-over/${pendingLoanId}`,
-        { total_amount: Number(totalAmount) },
+        { principal: Number(totalAmount) },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -305,7 +305,7 @@ const Defaulted = () => {
               Roll Over Defaulted Loan
             </h4>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Enter the new total amount for this loan rollover
+              Enter the new principal for this loan rollover
             </p>
           </div>
           <form className="flex flex-col" onSubmit={handleRolloverSave}>
@@ -313,7 +313,7 @@ const Defaulted = () => {
               <div className="mt-7">
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
                   <div className="col-span-2 lg:col-span-1">
-                    <Label>Total Amount</Label>
+                    <Label>Principal</Label>
                     <Input
                       type="number"
                       value={totalAmount}
