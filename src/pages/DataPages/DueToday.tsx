@@ -114,6 +114,7 @@ const DueToday = () => {
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         toast.error(error.response?.data?.error || "Failed to roll over loan.");
+        console.error(error);
       } else {
         toast.error("An unexpected error occurred.");
       }
