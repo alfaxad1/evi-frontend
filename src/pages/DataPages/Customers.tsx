@@ -15,6 +15,9 @@ import { toast, ToastContainer } from "react-toastify";
 import { Search } from "lucide-react";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { ClipLoader } from "react-spinners";
+import TabbedModal from "../UiElements/TabbedModal";
+import { Modal } from "../../components/ui/modal";
+import { useModal } from "../../hooks/useModal";
 
 interface Customer {
   id: number;
@@ -92,6 +95,8 @@ const Customers = () => {
   const [error, setError] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [allCustomersData, setAllCustomersData] = useState<Customer[]>([]);
+  const { isOpen, openModal, closeModal } = useModal();
+  //const [selectedCustomerForModal, setSelectedCustomerForModal] = useState<number | null>(null);
 
   const fetchAllCustomers = useCallback(
     async (role: string, userId: string) => {
@@ -169,6 +174,11 @@ const Customers = () => {
     }
   };
 
+ const handleViewDetailsClick = (customer: Customer) => {
+  localStorage.setItem("customerId", customer.id.toString());
+  openModal();
+};
+
   const handleDeleteClick = (customer: Customer) => {
     setSelectedCustomerId(customer.id);
     setShowConfirm(true);
@@ -231,6 +241,14 @@ const Customers = () => {
         message={`Are you sure you want to delete this customer ?`}
       />
       <ToastContainer position="bottom-right" />
+      <TabbedModal 
+  isOpen={isOpen} 
+  onClose={() => {
+    closeModal();
+    //setSelectedCustomerForModal(null);
+  }} 
+  Modal={Modal}
+/>
       <div className="relative mb-4">
         <span className="absolute inset-y-0 left-0 flex items-center pl-3">
           <Search />
@@ -352,24 +370,19 @@ const Customers = () => {
                             <i className="fas fa-trash text-red-500 hover:text-red-700"></i>
                           </button>
                           <button
-                            onClick={() => {
-                              localStorage.setItem(
-                                "customerId",
-                                customer.id.toString()
-                              );
-                              navigate("/customer-details");
-                            }}
-                            className="p-1 rounded hover:bg-gray-100"
-                            title="View Details"
-                          >
-                            <i className="fas fa-eye text-yellow-500 hover:text-yellow-700"></i>
-                          </button>
+  onClick={() => handleViewDetailsClick(customer)}
+  className="p-1 rounded hover:bg-gray-100"
+  title="View Details"
+>
+  <i className="fas fa-eye text-yellow-500 hover:text-yellow-700"></i>
+</button>
                         </div>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              
             )}
           </div>
         </div>

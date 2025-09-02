@@ -77,7 +77,7 @@ const LoanApplication = () => {
   const customerId = localStorage.getItem("customerId");
   const userId = parseInt(localStorage.getItem("userId") || "0");
 
-  console.log("User ID:", userId);
+  //console.log("User ID:", userId);
 
   useEffect(() => {
     setFormData((prevFormData) => ({
@@ -87,7 +87,7 @@ const LoanApplication = () => {
     }));
   }, [customerId, userId]);
 
-  console.log("Form data:", formData);
+  //console.log("Form data:", formData);
 
   const resetForm = () => {
     setFormData({
@@ -115,8 +115,10 @@ const LoanApplication = () => {
     } catch (error: unknown) {
       console.error("Error submitting form:", error);
       if (axios.isAxiosError(error)) {
-        const axiosError = error.response?.data.errors[0].msg;
+        console.log("error", error);
+        const axiosError = error.response?.data.error;
         toast.error(axiosError);
+        console.log(axiosError);
       } else {
         toast.error("An unexpected error occurred.");
       }
