@@ -10,6 +10,12 @@ import {
 } from "../../../src/components/ui/table";
 import withAuth from "../../utils/withAuth";
 import Button from "../../components/ui/button/Button";
+import { Repeat } from "lucide-react";
+import { Modal } from "../../components/ui/modal";
+import Label from "../../components/form/Label";
+import Input from "../../components/form/input/InputField";
+import { toast } from "react-toastify";
+import { useModal } from "../../hooks/useModal";
 
 interface DueLoan {
   id: number;
@@ -34,6 +40,9 @@ const Due2To7 = () => {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalAmount, setTotalAmount] = useState<string>("");
+  const { isOpen, openModal, closeModal } = useModal();
+  const [pendingLoanId, setPendingLoanId] = useState<number | null>(null);
 
   const role = JSON.parse(localStorage.getItem("role") || "''");
   const officerId = localStorage.getItem("userId") || "";
@@ -69,12 +78,57 @@ const Due2To7 = () => {
   useEffect(() => {
     fetchDueLoans();
   }, [fetchDueLoans]);
+  
   const handleNextPage = () => {
     if (page < totalPages) {
       setPage(page + 1);
     }
   };
 
+  const handleRolloverClick = (loanId: number) => {
+    setPendingLoanId(loanId);
+    setTotalAmount(""); // reset
+    openModal();
+  };
+
+  const handleRolloverSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (pendingLoanId === null) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("You are not authorized");
+        return;
+      }
+
+      await axios.post(
+        `${apiUrl}/api/loans/roll-over/${pendingLoanId}`,
+        { principal: Number(totalAmount) },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Remove the rolled-over loan from state instead of refreshing all data
+      setDueLoans(prevLoans => prevLoans.filter(loan => loan.id !== pendingLoanId));
+      closeModal();
+      setPendingLoanId(null);
+      toast.success("Loan rolled over successfully");
+      setTotalAmount("");
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        toast.error(error.response?.data?.error || "Failed to roll over loan.");
+        console.error(error);
+      } else {
+        toast.error("An unexpected error occurred.");
+      }
+    }
+  };
+  
   const handlePrevPage = () => {
     if (page > 1) {
       setPage(page - 1);
@@ -151,6 +205,12 @@ const Due2To7 = () => {
                   >
                     Days Remaining
                   </TableCell>
+                   <TableCell
+                    isHeader
+                    className="px-5 py-3 font-medium text-blue-500 text-start text-theme-xs dark:text-gray-400"
+                  >
+                    Actions
+                  </TableCell>
                 </TableRow>
               </TableHeader>
 
@@ -182,6 +242,17 @@ const Due2To7 = () => {
                     <TableCell className="px-4 py-3 text-gray-500  text-theme-sm dark:text-gray-400 text-center">
                       {loan.days_remaining}
                     </TableCell>
+                    <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleRolloverClick(loan.id)}
+                          className="bg-blue-500 text-white p-2 rounded-md w-10 flex items-center justify-center hover:bg-blue-600 transition-colors"
+                          title="Roll Over"
+                        >
+                          <Repeat size={18} />
+                        </button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -212,6 +283,37 @@ const Due2To7 = () => {
           </div>
         </div>
       </div>
+      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[400px] m-4">
+        <div className="no-scrollbar relative w-auto max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+          <div className="px-2 pr-14">
+            <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+              Enter Principal
+            </h4>
+          </div>
+          <form className="flex flex-col" onSubmit={handleRolloverSave}>
+            <div className="custom-scrollbar overflow-y-auto px-2 pb-3">
+              <div className="mt-7">
+                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>Principal</Label>
+                    <Input
+                      type="number"
+                      value={totalAmount}
+                      onChange={(e) => setTotalAmount(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 px-2 mt-6 lg:justify-center">
+              <Button size="sm" type="submit">
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </div>
+      </Modal>
     </div>
   );
 };
