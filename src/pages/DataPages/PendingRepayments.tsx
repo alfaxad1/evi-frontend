@@ -54,9 +54,10 @@ const PendingRepayments = () => {
         const response = await axios.get(
           `${apiUrl}/api/repayments/pending?page=${page}`
         );
-        console.log("Pending repayments fetched successfully:", response.data);
+        console.log("Pending repayments fetched successfully: ", response.data);
 
         setPendingRepayments(response.data.data);
+        console.log("total pages: ",response.data.meta.totalPages)
         setTotalPages(response.data.meta.totalPages);
       } catch (error) {
         console.error("Error fetching pending repayments:", error);
@@ -107,7 +108,6 @@ const PendingRepayments = () => {
     }
   };
 
-  console.log("Pending repayments:", pendingRepayments);
 
   const filteredRepayments = pendingRepayments.filter((repayment) => {
     return (
@@ -137,7 +137,7 @@ const PendingRepayments = () => {
           <div className="w-full overflow-x-auto">
             {pendingRepayments && pendingRepayments.length === 0 ? (
               <div className="text-center py-4 text-blue-500">
-                No loans pending disbursement.
+                No pending repayments.
               </div>
             ) : (
               <Table>

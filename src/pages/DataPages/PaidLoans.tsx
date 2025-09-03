@@ -44,8 +44,9 @@ const PaidLoans = () => {
         const response = await axios.get(
           `${apiUrl}/api/loans/loan-details/paid?role=${role}&officerId=${officerId}&page=${page}`
         );
-        console.log(response.data.data);
+        console.log(response.data);
         setLoansData(response.data.data);
+        console.log("total pages: ",response.data.meta.totalPages)
         setTotalPages(response.data.meta.totalPages);
       } catch (err) {
         console.log(err);
