@@ -525,6 +525,9 @@ const Loans = () => {
           {details ? (
             <div className="mt-4">
               <p>
+                <strong>Id:</strong> #{details.id}
+              </p>
+              <p>
                 <strong>Customer Name:</strong> {details.customer_name}
               </p>
               <p>
