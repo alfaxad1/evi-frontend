@@ -221,7 +221,7 @@ const Defaulted = () => {
                       {loan.phone}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                      {loan.principal.toLocaleString()}
+                      {loan.principal != null ? loan.principal.toLocaleString() : "-"}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                       {loan.total_amount.toLocaleString()}

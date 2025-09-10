@@ -22,6 +22,10 @@ import {
   Legend,
 } from "chart.js";
 import { ClipLoader } from "react-spinners";
+import { Modal } from "../../components/ui/modal";
+import { useModal } from "../../hooks/useModal";
+import Button from "../../components/ui/button/Button";
+import Badge from "../../components/ui/badge/Badge";
 
 ChartJS.register(
   LineElement,
@@ -46,6 +50,27 @@ interface Summary {
   loan_count: number;
 }
 
+interface Loan {
+  id: number;
+  customer_name: string;
+  national_id: string;
+  loan_product: string;
+  purpose: string;
+  principal: number;
+  total_amount: number;
+  remaining_balance: number;
+  status: string;
+  due_date: string;
+  expected_completion_date: string;
+  days_remaining: number;
+  total_interest: number;
+  installment_amount: number;
+  arrears: number;
+  installment_sum: number;
+  paid_amount: number;
+  processing_fee: number;
+}
+
 const CompanyMonthlyDisbursements = () => {
   const apiUrl = import.meta.env.VITE_API_URL;
   const [officers, setOfficers] = useState<Officer[]>([]);
@@ -54,8 +79,14 @@ const CompanyMonthlyDisbursements = () => {
   const [monthlyData, setMonthlyData] = useState<number[]>(Array(12).fill(0));
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const officerId = localStorage.getItem("userId") || "";
+  const [loans, setLoans]  = useState<Loan[]>([]);
+ const { isOpen, openModal, closeModal } = useModal();
+const officerId = localStorage.getItem("userId") || "";
+const role = JSON.parse(localStorage.getItem("role") || "''");
   const currentYear = new Date().getFullYear();
+    const [page, setPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+
 
   const monthNames = useMemo(
     () => [
@@ -127,6 +158,35 @@ const CompanyMonthlyDisbursements = () => {
     fetchMonthlyCollections();
     fetchAllMonths();
   }, [fetchMonthlyCollections, fetchAllMonths]);
+
+  const fetchOfficerLoans = async (id: number) => {
+    setLoading(true);
+    setError(null);
+    openModal();
+    try {
+      const response = await axios.get(
+        `${apiUrl}/api/loans/loan-details`,
+        {
+          params: { 
+            role,
+            officerId: id,
+            page,
+            limit: 7 
+          },
+        }
+      );
+      setLoans(response.data.data);
+      setTotalPages(response.data.meta.totalPages);
+      console.log("Loans data:", response.data.data);
+      //closeModal();
+    } catch (error) {
+      console.error("Error fetching officer loans:", error);
+      setError("Failed to fetch officer loans. Please try again.");
+    }
+    finally {
+      setLoading(false);
+    }
+  };
 
   const chartData = {
     labels: monthNames,
@@ -233,7 +293,7 @@ const CompanyMonthlyDisbursements = () => {
     },
   };
 
-  if (loading) {
+ if (loading) {
     return (
       <div className="fixed inset-0  backdrop-blur-sm flex items-center justify-center z-50">
         <ClipLoader color="#36D7B7" size={50} speedMultiplier={0.8} />
@@ -244,6 +304,18 @@ const CompanyMonthlyDisbursements = () => {
   if (error) {
     return <div className="text-red-500">{error}</div>;
   }
+
+  const handleNextPage = () => {
+    if (page < totalPages) {
+      setPage(page + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (page > 1) {
+      setPage(page - 1);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
@@ -394,6 +466,12 @@ const CompanyMonthlyDisbursements = () => {
                   >
                     Percentage
                   </TableCell>
+                   <TableCell
+                    isHeader
+                    className="px-6 py-4 font-semibold text-blue-600 dark:text-blue-400 text-start"
+                  >
+                    Actions
+                  </TableCell>
                 </TableRow>
               </TableHeader>
               <TableBody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -418,6 +496,18 @@ const CompanyMonthlyDisbursements = () => {
                     <TableCell className="px-6 py-4 text-gray-600 dark:text-gray-300 text-start">
                       {((officer.total_amount_sum / 700000) * 100).toFixed(2)}%
                     </TableCell>
+                    <TableCell className="px-6 py-4 text-gray-600 dark:text-gray-300 text-start">
+                      <div className="flex gap-2 p-2">
+                        <button
+                          onClick={() => fetchOfficerLoans(officer.id)}
+                          className="bg-blue-500 text-white p-2 rounded-md w-10 flex items-center justify-center hover:bg-blue-600 transition-colors"
+                          title="Active Loans"
+                          disabled
+                        >
+                          Loans
+                        </button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -425,6 +515,125 @@ const CompanyMonthlyDisbursements = () => {
           )}
         </div>
       </div>
+      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[400px] m-4">
+       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+        <div className="max-w-screen-lg mx-auto">
+          <div className="w-full overflow-x-auto">
+            {loans && loans.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">
+                No loans found.
+              </div>
+            ) : (
+              <Table>
+                {/* Table Header */}
+                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                  <TableRow>
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 font-medium text-blue-500 text-start text-theme-xs dark:text-gray-400"
+                    >
+                      Customer Name
+                    </TableCell>
+
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 font-medium text-blue-500 text-start text-theme-xs dark:text-gray-400"
+                    >
+                      Loan Amount
+                    </TableCell>
+
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 font-medium text-blue-500 text-start text-theme-xs dark:text-gray-400"
+                    >
+                      Balance
+                    </TableCell>
+
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 font-medium text-blue-500 text-start text-theme-xs dark:text-gray-400"
+                    >
+                      Status
+                    </TableCell>
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 font-medium text-blue-500 text-start text-theme-xs dark:text-gray-400"
+                    >
+                      Due Date
+                    </TableCell>
+
+      
+                  </TableRow>
+                </TableHeader>
+
+                {/* Table Body */}
+                <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                  {loans.map((loan) => (
+                    <TableRow key={loan.id}>
+                      <TableCell className="px-5 py-4 sm:px-6 text-start">
+                        {loan.customer_name}
+                      </TableCell>
+
+                      <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                        {loan.total_amount}
+                      </TableCell>
+
+                      <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                        {loan.remaining_balance < 0
+                          ? loan.total_amount
+                          : loan.remaining_balance}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                        <Badge
+                          color={
+                            loan.status === "active" ? "success" : "warning"
+                          }
+                        >
+                          {loan.status === "partially_paid"
+                            ? "partially paid"
+                            : loan.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                        {loan.expected_completion_date
+                          ? loan.expected_completion_date.split("T")[0]
+                          : "N/A"}
+                      </TableCell>
+
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+          {/* Pagination Controls */}
+          <div className="flex justify-between items-center mt-4">
+            <Button
+              size="sm"
+              className="hover:bg-gray-200 m-4"
+              variant="outline"
+              onClick={handlePrevPage}
+              disabled={page === 1}
+            >
+              Previous
+            </Button>
+            <span>
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              size="sm"
+              className="hover:bg-gray-200 m-4"
+              variant="outline"
+              onClick={handleNextPage}
+              disabled={page === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      </Modal>
     </div>
   );
 };
