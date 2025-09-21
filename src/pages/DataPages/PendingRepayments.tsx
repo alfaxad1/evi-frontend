@@ -7,11 +7,16 @@ import {
   TableRow,
 } from "../../../src/components/ui/table";
 import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import Button from "../../components/ui/button/Button";
 import { Search } from "lucide-react";
 import { ClipLoader } from "react-spinners";
+import Label from "../../components/form/Label";
+import Input from "../../components/form/input/InputField";
+import { Modal } from "../../components/ui/modal";
+import { useModal } from "../../hooks/useModal";
+
 
 interface pendingRepayment {
   id: number;
@@ -45,6 +50,14 @@ const PendingRepayments = () => {
   const [searchString, setSearchString] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { isOpen, openModal, closeModal } = useModal();
+  const [loanId, setLoanId] = useState<string | null>(null);
+  const [selectedRepaymentId, setSelectedRepaymentId] = useState<number | null>(null);
+
+  const handleResolveClick = (repaymentId: number) => {
+    setSelectedRepaymentId(repaymentId);
+    openModal();
+  };
 
   const fetchPendingRepayments = useCallback(
     async (page: number): Promise<void> => {
@@ -83,16 +96,37 @@ const PendingRepayments = () => {
     return <div className="text-red-500">{error}</div>;
   }
 
-  const resolveRepayment = async (repaymentId: number) => {
+  const handleResolveRepayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     try {
-      const response = await axios.delete(
-        `${apiUrl}/api/repayments/${repaymentId}`
+      const response = await axios.post(
+        `${apiUrl}/api/repayments/resolve-payment`,
+        {},
+        {params: {
+            loanId: parseInt(loanId || "0"),
+            paymentId: selectedRepaymentId
+          },
+        }
       );
-      console.log("Repayment resolved successfully:", response.data);
-      toast.success("Repayment resolved successfully!");
+      console.log(response.data);
+      setLoanId(null);
+      setSelectedRepaymentId(null);
+      closeModal();
+      toast.success(response.data);
       fetchPendingRepayments(page);
     } catch (error) {
       console.error("Error resolving repayment:", error);
+      const axiosError = error as AxiosError;
+      const errmsg = axiosError.response?.data || axiosError.message;
+      console.log(errmsg);
+      closeModal();
+      toast.error(
+        "Error: " +
+          (typeof errmsg === "object" && errmsg !== null && "error" in errmsg
+            ? (errmsg as { error: string }).error
+            : errmsg)
+      );
     }
   };
 
@@ -205,7 +239,7 @@ const PendingRepayments = () => {
                       </TableCell>
                       <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                         <button
-                          onClick={() => resolveRepayment(repayment.id)}
+                          onClick={() => handleResolveClick(repayment.id)}
                           className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                         >
                           Resolve
@@ -242,6 +276,48 @@ const PendingRepayments = () => {
             </Button>
           </div>
         </div>
+        <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[400px] m-4">
+                <div className="no-scrollbar relative w-auto max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+                  <div className="px-2 pr-14">
+                    <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+                      Resolve Payment
+                    </h4>
+                  
+                  </div>
+                  <form className="flex flex-col" onSubmit={handleResolveRepayment}>
+                    <div className="custom-scrollbar overflow-y-auto px-2 pb-3">
+                      <div className="mt-7">
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
+                          <div className="col-span-2 lg:col-span-1">
+                            <Label>Enter the Loan Id: </Label>
+                            <Input
+                              type="number"
+                              value={loanId || ""}
+                              onChange={(e) => setLoanId(e.target.value)}
+                              placeholder="123"
+                              min="1"
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 px-2 mt-6 lg:justify-center">
+                      <Button
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                        onClick={closeModal}
+                      >
+                        Cancel
+                      </Button>
+                      <Button size="sm" type="submit">
+                        Resolve
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </Modal>
       </div>
     </>
   );

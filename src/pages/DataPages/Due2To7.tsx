@@ -164,6 +164,12 @@ const Due2To7 = () => {
                     isHeader
                     className="px-5 py-3 font-medium text-blue-500 text-start text-theme-xs dark:text-gray-400"
                   >
+                    Id
+                  </TableCell>
+                  <TableCell
+                    isHeader
+                    className="px-5 py-3 font-medium text-blue-500 text-start text-theme-xs dark:text-gray-400"
+                  >
                     Customer Name
                   </TableCell>
 
@@ -218,6 +224,10 @@ const Due2To7 = () => {
               <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                 {dueLoans.map((loan) => (
                   <TableRow key={loan.id}>
+                    <TableCell className="px-5 py-4 sm:px-6 text-start">
+                      {loan.id}
+                    </TableCell>
+                    
                     <TableCell className="px-5 py-4 sm:px-6 text-start">
                       {loan.customer_name}
                     </TableCell>
