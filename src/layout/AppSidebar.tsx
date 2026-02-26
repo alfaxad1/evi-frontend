@@ -60,7 +60,7 @@ const navItems: NavItem[] = [
   },
 ];
 
-const role: string | null = JSON.parse(localStorage.getItem("role") || "null");
+const role: string | null = localStorage.getItem("role");
 
 //const role = "admin";
 console.log("role: ", role);

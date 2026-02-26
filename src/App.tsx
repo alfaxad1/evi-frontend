@@ -36,11 +36,13 @@ import { AllRepayments } from "./pages/DataPages/AllRepayments";
 import { CompanyMonthlyDisbursements } from "./pages/DataPages/CompanyMonthlyDisbursements";
 import { CompanyMonthlyCollections } from "./pages/DataPages/CompanyMonthlyCollections";
 import CustomerDetails from "./pages/DataPages/CustomerDetails";
+import { ToastContainer } from "react-toastify";
 
 export default function App() {
   return (
     <>
       <Router>
+        <ToastContainer position="bottom-right" />
         <ScrollToTop />
         <Routes>
           {/* Auth Layout */}

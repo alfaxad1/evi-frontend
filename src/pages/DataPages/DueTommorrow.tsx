@@ -10,6 +10,8 @@ import {
 import withAuth from "../../utils/withAuth";
 import { ClipLoader } from "react-spinners";
 import Button from "../../components/ui/button/Button";
+import { Repeat } from "lucide-react";
+import RolloverModal from "../../components/common/RolloverModal";
 
 interface DueLoan {
   id: number;
@@ -37,6 +39,9 @@ const DueTommorrow = () => {
 
   const role = JSON.parse(localStorage.getItem("role") || "''");
   const officerId = localStorage.getItem("userId") || "";
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedLoanId, setSelectedLoanId] = useState<number | null>(null);
 
   const fetchDueLoans = useCallback(async () => {
     setLoading(true);
@@ -69,6 +74,11 @@ const DueTommorrow = () => {
   useEffect(() => {
     fetchDueLoans();
   }, [fetchDueLoans]);
+
+  const triggerRollover = (id: number) => {
+    setSelectedLoanId(id);
+    setIsModalOpen(true);
+  };
 
   const handleNextPage = () => {
     if (page < totalPages) {
@@ -156,6 +166,12 @@ const DueTommorrow = () => {
                   >
                     Due Date
                   </TableCell>
+                  <TableCell
+                    isHeader
+                    className="px-5 py-3 font-medium text-blue-500 text-start text-theme-xs dark:text-gray-400"
+                  >
+                    Actions
+                  </TableCell>
                 </TableRow>
               </TableHeader>
 
@@ -181,6 +197,17 @@ const DueTommorrow = () => {
                     </TableCell>
                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                       {loan.expected_completion_date.split("T")[0]}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => triggerRollover(loan.id)}
+                          className="bg-blue-500 text-white p-2 rounded-md w-10 flex items-center justify-center hover:bg-blue-600 transition-colors"
+                          title="Roll Over"
+                        >
+                          <Repeat size={18} />
+                        </button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -210,6 +237,14 @@ const DueTommorrow = () => {
               Next
             </Button>
           </div>
+          <RolloverModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            loanId={selectedLoanId}
+            onSuccess={() => {
+              fetchDueLoans();
+            }}
+          />
         </div>
       </div>
     </div>

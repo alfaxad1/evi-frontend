@@ -11,12 +11,7 @@ import withAuth from "../../utils/withAuth";
 import { ClipLoader } from "react-spinners";
 import Button from "../../components/ui/button/Button";
 import { Repeat } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
-import { Modal } from "../../components/ui/modal";
-import { useModal } from "../../hooks/useModal";
-import Label from "../../components/form/Label";
-import Input from "../../components/form/input/InputField";
-
+import RolloverModal from "../../components/common/RolloverModal";
 interface DefaultedLoan {
   id: number;
   customer_name: string;
@@ -39,9 +34,8 @@ const Defaulted = () => {
   const [defaultedLoans, setDefaultedLoans] = useState<DefaultedLoan[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [totalAmount, setTotalAmount] = useState<string>("");
-  const [pendingLoanId, setPendingLoanId] = useState<number | null>(null);
-  const { isOpen, openModal, closeModal } = useModal();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedLoanId, setSelectedLoanId] = useState<number | null>(null);
 
   const role = JSON.parse(localStorage.getItem("role") || "''");
   const officerId = localStorage.getItem("userId") || "";
@@ -73,46 +67,9 @@ const Defaulted = () => {
     fetchDefaultedLoans(role, officerId, page);
   }, [role, officerId, page, fetchDefaultedLoans]);
 
-  const handleRolloverClick = (loanId: number) => {
-    setPendingLoanId(loanId);
-    setTotalAmount(""); // reset
-    openModal();
-  };
-
-  const handleRolloverSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (pendingLoanId === null) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("You are not authorized");
-        return;
-      }
-
-      await axios.post(
-        `${apiUrl}/api/loans/roll-over/${pendingLoanId}`,
-        { principal: Number(totalAmount) },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      fetchDefaultedLoans(role, officerId, page);
-      toast.success("Loan rolled over successfully");
-      closeModal();
-      setPendingLoanId(null);
-      setTotalAmount("");
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        toast.error(error.response?.data?.error || "Failed to roll over loan.");
-      } else {
-        toast.error("An unexpected error occurred.");
-      }
-    }
+  const triggerRollover = (id: number) => {
+    setSelectedLoanId(id);
+    setIsModalOpen(true);
   };
 
   const handleNextPage = () => {
@@ -141,7 +98,6 @@ const Defaulted = () => {
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-      <ToastContainer position="bottom-right" />
       <div className="max-w-screen-lg mx-auto">
         <div className="w-full overflow-x-auto">
           {defaultedLoans && defaultedLoans.length === 0 ? (
@@ -230,7 +186,9 @@ const Defaulted = () => {
                       {loan.phone}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                      {loan.principal != null ? loan.principal.toLocaleString() : "-"}
+                      {loan.principal != null
+                        ? loan.principal.toLocaleString()
+                        : "-"}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                       {loan.total_amount.toLocaleString()}
@@ -266,7 +224,7 @@ const Defaulted = () => {
                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                       <div className="flex gap-2">
                         <button
-                          onClick={() => handleRolloverClick(loan.id)}
+                          onClick={() => triggerRollover(loan.id)}
                           className="bg-blue-500 text-white p-2 rounded-md w-10 flex items-center justify-center hover:bg-blue-600 transition-colors"
                           title="Roll Over"
                         >
@@ -307,50 +265,14 @@ const Defaulted = () => {
         </div>
       </div>
 
-      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[400px] m-4">
-        <div className="no-scrollbar relative w-auto max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
-          <div className="px-2 pr-14">
-            <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Roll Over Defaulted Loan
-            </h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Enter the new principal for this loan rollover
-            </p>
-          </div>
-          <form className="flex flex-col" onSubmit={handleRolloverSave}>
-            <div className="custom-scrollbar overflow-y-auto px-2 pb-3">
-              <div className="mt-7">
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
-                  <div className="col-span-2 lg:col-span-1">
-                    <Label>Principal</Label>
-                    <Input
-                      type="number"
-                      value={totalAmount}
-                      onChange={(e) => setTotalAmount(e.target.value)}
-                      placeholder="Enter new loan amount"
-                      min="1"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 px-2 mt-6 lg:justify-center">
-              <Button
-                size="sm"
-                type="button"
-                variant="outline"
-                onClick={closeModal}
-              >
-                Cancel
-              </Button>
-              <Button size="sm" type="submit">
-                Roll Over Loan
-              </Button>
-            </div>
-          </form>
-        </div>
-      </Modal>
+      <RolloverModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        loanId={selectedLoanId}
+        onSuccess={() => {
+          fetchDefaultedLoans(role, officerId, page);
+        }}
+      />
     </div>
   );
 };
